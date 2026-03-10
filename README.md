@@ -1,13 +1,19 @@
-# CARDIOSCOPE-(Digital-Stethoscope)
+# 🩺CARDIOSCOPE-(Digital-Stethoscope)
 CARDIOSCOPE is a digital stethoscope that captures heart sounds using a stethoscope sensor and processes them with an ESP32 microcontroller. It records real-time heart signals and sends the data to a computer for analysis. A machine learning model analyzes the audio to help detect abnormal heart patterns for early cardiac monitoring.
 
 ---
 
 ## Introduction
-Digital Stethoscope aims at producing an electronics based amplifying stethoscope, which can store/ transmit the sound waveform captured to another device. Some of the advantages and motivation to switch from mechanically to electronically based amplifying are :
-- Better amplification, and a more flexible range of amplification
-- Noise reduction capabilities 
-- Ability to store and transmit sound captures in order to analyse them on a later date
+This project builds a fully functional **Digital Stethoscope** system using an ESP32 microcontroller and INMP441 I2S digital microphone. The system captures heart and lung sounds, streams the raw audio wirelessly over Wi-Fi to a local PC, runs a Machine Learning model to classify the sounds, and delivers **real-time diagnostic predictions** through a live web dashboard — all without any cloud dependency.
+
+The key advantages of this digital approach over a traditional mechanical stethoscope are:
+- Real-time audio capture using a high-quality **I2S digital microphone** (INMP441)
+- Wireless transmission to a local PC over the **same Wi-Fi network**
+- **Machine Learning classification** — Normal, Murmur, Arrhythmia, Extra Sound
+- Live web dashboard with **real waveform**, **MFCC heatmap**, probability charts
+- **Patient record management** with PDF report export
+- Fully local — **no cloud required**, no internet dependency
+
 
 ## Technologies Used
 We have used the following technologies and software for our project
@@ -28,8 +34,27 @@ We have used the following technologies and software for our project
         width = "50"
         height = "50"></a>
     </li>
+    <li>
+    <a href="https://librosa.org/" target="_blank">
+      <img src="https://librosa.org/doc/latest/_static/librosa_logo_text.png"
+      alt="librosa" width="100" height="40">
+    </a>&nbsp; Librosa (Audio Feature Extraction)
+  </li>
+  <li>
+    <a href="https://code.visualstudio.com/" target="_blank">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Visual_Studio_Code_1.35_icon.svg/2048px-Visual_Studio_Code_1.35_icon.svg.png"
+      alt="VS Code" width="50" height="50">
+    </a>&nbsp; Visual Studio Code + PlatformIO IDE
+  </li>
+  <li>
+    <a href="https://scikit-learn.org/" target="_blank">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Scikit_learn_logo_small.svg"
+      alt="scikit-learn" width="80" height="50">
+    </a>&nbsp; Scikit-Learn (Random Forest)
+  </li>
 </ul
 
+---
 ## Objectives 
 The main goals have set out for this project are 
 - Make a microphone - amplification module that can detect frequencies from 50Hz to 20kHz 
@@ -71,4 +96,66 @@ Overall, the ESP32 is a powerful and versatile microcontroller board that is wel
 
 In this project, the esp32 is used to transmit the data collected from the microphone to the ML model over the in-built Wi-Fi.
 </p> <hr>
+
+## System Architecture
+
+### Pipeline
+
+The complete data flow of the system:
+
+```
+┌─────────────────┐     I2S Digital Audio     ┌──────────────────────┐
+│  INMP441 Mic    │ ─────────────────────────> │   ESP32 DevKit       │
+│  (16kHz, 16bit) │                            │   (PlatformIO)       │
+└─────────────────┘                            └──────────┬───────────┘
+                                                          │
+                                              HTTP POST /predict
+                                              (raw int16 bytes)
+                                              Same Wi-Fi Network
+                                                          │
+                                                          ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    LOCAL PC — Flask Server (Python)                   │
+│                                                                       │
+│  Raw bytes → float32 audio → librosa feature extraction               │
+│       ↓                                                               │
+│  • MFCC (40 coeff × 60 frames)   — for heatmap + model input         │
+│  • Waveform (200 downsampled pts) — for waveform chart               │
+│  • RMS dB, ZCR, Spectral Centroid — for signal metrics               │
+│       ↓                                                               │
+│  Random Forest Classifier → prediction + all class probabilities      │
+│       ↓                                                               │
+│  /latest endpoint stores full result                                  │
+└──────────────────────────────┬───────────────────────────────────────┘
+                               │
+                   Dashboard polls /latest every 2s
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    Web Dashboard (dashboard.html)                     │
+│                                                                       │
+│  ● Real waveform chart          ● MFCC heatmap (40×60)              │
+│  ● Class probability bars       ● Confidence trend line             │
+│  ● Session distribution donut   ● Signal metrics (RMS, SC, ZCR)    │
+│  ● Patient record form          ● PDF report export                 │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+<hr>
+
+## Hardware
+
+### Components
+
+| Component | Specification |
+|---|---|
+| **Microcontroller** | ESP32-WROOM-32 / ESP32-DevKitC v4 |
+| **Microphone** | INMP441 I2S Digital Microphone (16kHz, 16-bit) |
+| **Stethoscope** | Acoustic stethoscope — mic inserted into chest piece |
+| **LEDs** | Green (Wi-Fi connected), Red (Recording active) |
+| **Push Button** | Momentary button — manual recording trigger |
+| **Power** | USB 5V or 3.7V Li-Po battery + TP4056 charger |
+| **Resistors** | 220Ω × 2 (LED current limiting) |
+| **Breadboard** | 830-point solderless breadboard |
+| **Jumper Wires** | Male-to-male and male-to-female, 20cm |
 
