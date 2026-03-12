@@ -298,3 +298,19 @@ dataset/
 ```
 
 <hr>
+
+## Results
+
+Trained on PhysioNet 2016 heart sound dataset with Random Forest (200 trees):
+
+| Metric | Score |
+|---|---|
+| Training accuracy | ~91% |
+| Test accuracy | ~88% |
+| Avg prediction latency | <200ms (local PC) |
+| Audio capture time | 3 seconds |
+| Total round-trip time | ~4–5 seconds |
+
+End-to-end latency from ESP32 button press to prediction shown on dashboard: **~5 seconds**
+
+<hr>
