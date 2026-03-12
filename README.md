@@ -12,7 +12,6 @@ The key advantages of this digital approach over a traditional mechanical stetho
 - **Patient record management** with PDF report export
 - Fully local — **no cloud required**, no internet dependency
 
-<hr>
 
 ## Technologies Used
 We have used the following technologies and software for our project
