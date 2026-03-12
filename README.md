@@ -12,6 +12,7 @@ The key advantages of this digital approach over a traditional mechanical stetho
 - **Patient record management** with PDF report export
 - Fully local — **no cloud required**, no internet dependency
 
+<hr>
 
 ## Technologies Used
 We have used the following technologies and software for our project
@@ -52,7 +53,8 @@ We have used the following technologies and software for our project
   </li>
 </ul
 
----
+<hr>
+
 ## Objectives 
 The main goals have set out for this project are 
 - Make a microphone - amplification module that can detect frequencies from 50Hz to 20kHz 
