@@ -157,3 +157,98 @@ The complete data flow of the system:
 | **Breadboard** | 830-point solderless breadboard |
 | **Jumper Wires** | Male-to-male and male-to-female, 20cm |
 
+<hr>
+
+
+### Heart & Lung Sounds
+
+Heart and lung sounds carry important diagnostic information:
+
+**Heart Sounds:**
+- **Normal (S1/S2):** The classic "lub-dub" — closure of mitral/tricuspid valves (S1) and aortic/pulmonic valves (S2), frequency range 20–600 Hz
+- **Murmur:** Abnormal whooshing caused by turbulent blood flow — detectable as increased high-frequency energy in the signal
+- **Arrhythmia:** Irregular lub-dub timing — detectable via irregular zero-crossing patterns and RMS energy variance
+- **Extra Sound (S3/S4):** Additional heart sounds indicating heart failure or stiffness
+
+**Lung Sounds:**
+- **Bronchial:** Loud, high-pitched sounds over the trachea and larger airways
+- **Vesicular:** Softer sounds over smaller airways
+- **Crackles (Rales):** Discontinuous sounds caused by fluid-filled or collapsed airways reopening
+- **Wheezes:** Continuous high-pitched sounds from narrowed airways (asthma, COPD)
+
+The INMP441 captures sounds in the 20Hz–16kHz range at 16kHz sample rate. Heart sounds (20–600Hz) and lung sounds (up to 2000Hz) both fall well within the captured band. The ESP32 DMA buffers 3 seconds of audio (48,000 samples) before transmitting.
+
+<hr>
+
+## ML Model
+
+### Feature Extraction (MFCC)
+
+Raw audio cannot be fed directly into an ML model. The Flask server uses **librosa** to extract a feature vector of ~95 values from every 3-second recording:
+
+| Feature | Count | Description |
+|---|---|---|
+| MFCC mean | 40 | Mean of 40 Mel-Frequency Cepstral Coefficients over time |
+| MFCC std | 40 | Standard deviation — captures how the sound varies |
+| Chroma mean | 12 | Pitch-class energy distribution |
+| Spectral Centroid | 1 | "Brightness" of the sound (Hz) |
+| Zero Crossing Rate | 1 | How often the signal crosses zero — relates to noisiness |
+| RMS Energy | 1 | Loudness of the recording (dB) |
+
+The **MFCC matrix (40×60)** is also sent back to the dashboard for the real-time heatmap visualization.
+
+**Why MFCC?** MFCCs mimic how the human auditory system perceives sound — lower coefficients capture broad spectral shape (useful for murmur detection) while higher coefficients capture fine timbral texture (useful for distinguishing arrhythmia patterns).
+
+### Random Forest Classifier
+
+The **primary model** used for real-time prediction is a Random Forest Classifier:
+
+```python
+model = RandomForestClassifier(n_estimators=200, max_depth=20,
+                                random_state=42, n_jobs=-1)
+```
+
+**How it works:**
+- Trains 200 decision trees, each learning different patterns from the ~95 audio features
+- For each prediction, all 200 trees vote — the majority class wins
+- Outputs both the predicted class **and** probability for each class
+- Trained in seconds, runs predictions in <100ms
+
+**Classes:** `normal` | `murmur` | `arrhythmia` | `extrasound`
+
+**Why Random Forest over Deep Learning?**
+
+| | Random Forest | CNN/LSTM |
+|---|---|---|
+| Training data needed | 100+ samples | 1000+ samples |
+| Training time | Seconds | Minutes–hours |
+| Accuracy (small dataset) | 85–92% | Needs more data |
+| GPU required | No | Recommended |
+| Explainability | High | Low |
+
+### CNN Deep Learning Model
+
+A **1D Convolutional Neural Network** is also implemented as an advanced alternative using TensorFlow/Keras:
+
+| Layer | Output Shape | Parameters |
+|---|---|---|
+| Input | (time_frames, 40) | — |
+| Conv1D (64 filters) | (time, 64) | 7,744 |
+| BatchNormalization | (time, 64) | 256 |
+| MaxPooling1D | (time/2, 64) | — |
+| Dropout (0.3) | (time/2, 64) | — |
+| Conv1D (128 filters) | (time/2, 128) | 24,704 |
+| BatchNormalization | (time/2, 128) | 512 |
+| MaxPooling1D | (time/4, 128) | — |
+| Dropout (0.3) | (time/4, 128) | — |
+| Conv1D (256 filters) | (time/4, 256) | 98,560 |
+| GlobalAveragePooling1D | (256,) | — |
+| Dense (128) | (128,) | 32,896 |
+| Dropout (0.4) | (128,) | — |
+| Dense (4, softmax) | (4,) | 516 |
+
+The CNN treats the MFCC matrix as a temporal sequence and uses convolutional filters to detect local patterns like the characteristic S1–S2 timing of a normal heartbeat or the irregular bursts of an arrhythmia.
+
+<hr>
+
+
