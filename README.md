@@ -10,7 +10,7 @@ The key advantages of this digital approach over a traditional mechanical stetho
 - Live web dashboard with **real waveform**, **MFCC heatmap**, probability charts
 - **Patient record management** with PDF report export
 - Fully local — **no cloud required**, no internet dependency
-
+<hr>
 
 ## Technologies Used
 We have used the following technologies and software for our project
@@ -57,7 +57,6 @@ The main goals have set out for this project are
 - Make a microphone - amplification module that can detect frequencies from 50Hz to 20kHz 
 - Transmit the sound clip to an associated laptop wirelessly 
 - Be able to detect the disease by using an associated Deep Learning model <hr>
-<hr>
 
 <h2>ESP32</h2>
 <img src="https://cdn.shopify.com/s/files/1/0609/6011/2892/files/doc-esp32-pinout-reference-wroom-devkit.png?width=1384" alt="ESP32 Pinout"
