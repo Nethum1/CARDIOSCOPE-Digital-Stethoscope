@@ -56,7 +56,8 @@ We have used the following technologies and software for our project
 The main goals have set out for this project are 
 - Make a microphone - amplification module that can detect frequencies from 50Hz to 20kHz 
 - Transmit the sound clip to an associated laptop wirelessly 
-- Be able to detect the disease by using an associated Deep Learning model <hr>
+- Be able to detect the disease by using an associated Deep Learning model
+<hr>
 
 <h2>ESP32</h2>
 <img src="https://cdn.shopify.com/s/files/1/0609/6011/2892/files/doc-esp32-pinout-reference-wroom-devkit.png?width=1384" alt="ESP32 Pinout"
