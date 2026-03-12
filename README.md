@@ -50,7 +50,7 @@ We have used the following technologies and software for our project
     </a>&nbsp; Scikit-Learn (Random Forest)
   </li>
 </ul
-
+<hr>
 
 ## Objectives 
 The main goals have set out for this project are 
