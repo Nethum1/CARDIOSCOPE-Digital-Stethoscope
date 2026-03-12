@@ -251,4 +251,50 @@ The CNN treats the MFCC matrix as a temporal sequence and uses convolutional fil
 
 <hr>
 
+## Real-Time Dashboard
 
+The dashboard (`dashboard.html`) is a single HTML file served by Flask. It connects to the server via `fetch()` and updates all charts in real time.
+
+**Features:**
+
+| Section | What It Shows |
+|---|---|
+| **Stats Bar** | Total records, Normal count, Abnormal count, Avg confidence, RMS dB, Spectral Centroid |
+| **Live Diagnosis** | Prediction label, confidence %, medical message, RMS/ZCR/duration metrics |
+| **Audio Waveform** | Real 200-point downsampled waveform from the ESP32 recording |
+| **Class Probability** | Horizontal bar chart — probability for each of 4 classes |
+| **Confidence Trend** | Line chart — confidence over the last 25 predictions |
+| **Session Distribution** | Donut chart — breakdown of prediction classes this session |
+| **MFCC Heatmap** | Real 40×60 MFCC matrix rendered as a colour heatmap canvas |
+| **Patient Form** | Name, Age, Gender, BP, HR, Weight, Height, Doctor, Notes |
+| **Session History** | Table of all saved records with prediction + vitals |
+| **PDF Export** | Full A4 clinical report with all charts, patient info, history table |
+
+**Connection states:**
+- `CONNECTED` — Flask server is running and receiving ESP32 data
+- `DEMO MODE` — Server not running; dashboard self-simulates with realistic data
+- `OFFLINE` — Was connected but server stopped
+
+<hr>
+
+## Dataset
+
+**Recommended training datasets:**
+
+| Dataset | Details |
+|---|---|
+| [PhysioNet 2016 Challenge](https://physionet.org/content/challenge-2016/) | 3,240 heart sound recordings, 5 classes — the standard benchmark |
+| [PhysioNet CinC 2022](https://physionet.org/content/circor-heart-sound/1.0.3/) | Latest dataset with murmur grading |
+| [ICBHI 2017 Respiratory Sounds](https://bhichallenge.med.auth.gr/) | 920 lung sound recordings from 126 patients — crackles, wheezes, normal |
+| [PASCAL Heart Sound Challenge](http://www.peterjbentley.com/heartchallenge/) | 800 recordings — systolic, diastolic, normal, noisy |
+
+**Folder structure for training:**
+```
+dataset/
+├── normal/         ← .wav files of normal heart sounds
+├── murmur/         ← .wav files with murmur
+├── arrhythmia/     ← .wav files with irregular rhythm
+└── extrasound/     ← .wav files with extra S3/S4 sounds
+```
+
+<hr>
