@@ -361,3 +361,7 @@ http://localhost:5000/test
 > ⚠️ **Disclaimer:** This device is for **educational and research purposes only**. It is NOT a certified medical device and must NOT be used for clinical diagnosis. Always consult a qualified healthcare professional.
 
 <hr>
+
+<p align="center">
+   ESP32 · Python · Flask · librosa · scikit-learn
+</p>
