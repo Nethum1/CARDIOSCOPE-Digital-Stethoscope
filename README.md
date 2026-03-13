@@ -314,3 +314,50 @@ Trained on PhysioNet 2016 heart sound dataset with Random Forest (200 trees):
 End-to-end latency from ESP32 button press to prediction shown on dashboard: **~5 seconds**
 
 <hr>
+
+## Setup Guide
+
+**1. Install Python dependencies:**
+```bash
+pip install flask flask-cors numpy librosa scikit-learn soundfile joblib tensorflow
+```
+
+**2. Train the model (once):**
+```bash
+python train_local.py
+```
+
+**3. Start the prediction server:**
+```bash
+python local_prediction_server.py
+```
+
+**4. Find your PC's local IP:**
+```bash
+# Windows
+ipconfig
+# Linux/Mac
+ip addr
+```
+
+**5. Update `config.h` in PlatformIO project:**
+```cpp
+#define PC_IP "192.168.1.X"   // your PC's local IP
+```
+
+**6. Build & upload firmware via PlatformIO in VS Code:**
+- Click ✔ (Build) then → (Upload) on the bottom blue bar
+
+**7. Open dashboard:**
+```
+http://localhost:5000
+```
+
+**8. Test without ESP32:**
+```
+http://localhost:5000/test
+```
+
+> ⚠️ **Disclaimer:** This device is for **educational and research purposes only**. It is NOT a certified medical device and must NOT be used for clinical diagnosis. Always consult a qualified healthcare professional.
+
+<hr>
