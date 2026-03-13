@@ -1,7 +1,6 @@
 # 🩺CARDIOSCOPE-(Digital-Stethoscope)
 
 <br>
-
 <details>
   <summary>Table of Contents</summary>
   <ol>
@@ -12,7 +11,7 @@
       </ul>
     </li>
     <li><a href="#objectives">Objectives</a></li>
-    <li> <a href="#esp32">ESP32</a><li>
+    <li><a href="#esp32">ESP32</a></li>
     <li>
       <a href="#system-architecture">System Architecture</a>
       <ul>
@@ -39,8 +38,6 @@
     <li><a href="#setup-guide">Setup Guide</a></li>
   </ol>
 </details>
-
-<hr>
 
 ## Introduction
 This project builds a fully functional **Digital Stethoscope** system using an ESP32 microcontroller and INMP441 I2S digital microphone. The system captures heart and lung sounds, streams the raw audio wirelessly over Wi-Fi to a local PC, runs a Machine Learning model to classify the sounds, and delivers **real-time diagnostic predictions** through a live web dashboard — all without any cloud dependency.
