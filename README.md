@@ -193,8 +193,8 @@ The complete data flow of the system:
 | **Push Button** | Momentary button — manual recording trigger |
 | **Power** | USB 5V or 3.7V Li-Po battery + TP4056 charger |
 | **Resistors** | 220Ω × 2 (LED current limiting) |
-| **Breadboard** | 830-point solderless breadboard |
-| **Jumper Wires** | Male-to-male and male-to-female, 20cm |
+| **Dotboard** | soldering board |
+| **Wires** |20cm |
 
 <hr>
 
