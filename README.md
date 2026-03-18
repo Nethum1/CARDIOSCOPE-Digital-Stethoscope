@@ -186,7 +186,7 @@ The complete data flow of the system:
 
 | Component | Specification |
 |---|---|
-| **Microcontroller** | ESP32-WROOM-32 / ESP32-DevKitC v4 |
+| **Microcontroller** | ESP32-WROOM-32 |
 | **Microphone** | INMP441 I2S Digital Microphone (16kHz, 16-bit) |
 | **Stethoscope** | Acoustic stethoscope — mic inserted into chest piece |
 | **LEDs** | Green (Wi-Fi connected), Red (Recording active) |
