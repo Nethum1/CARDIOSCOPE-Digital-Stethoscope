@@ -198,6 +198,9 @@ The complete data flow of the system:
 
 <hr>
 
+## Circuit Diagram
+<img width="476" height="347" alt="circuit for cardioscope" src="https://github.com/user-attachments/assets/23de4e5f-b250-4a58-b181-496411754ae4" />
+
 
 ### Heart & Lung Sounds
 
