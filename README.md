@@ -317,7 +317,7 @@ The MAX9814 microphone captures everything — not just heart sounds. Raw record
 
 Without filtering, the ML model receives a noisy signal where interference can be as strong as or stronger than the actual heart sounds. The DSP pipeline removes everything outside the 20–300 Hz cardiac band before the signal ever leaves the ESP32.
 
----
+
 
 ### Pipeline Overview
 
@@ -358,7 +358,6 @@ Processing runs **after** recording and **before** HTTP transmission to the Flas
 └─────────────────────────────────────────────────────────────────┘
 ```
 
----
 
 ### Filter Design
 
@@ -383,7 +382,6 @@ y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2]
 
 Where `x[n]` is the current input sample and `y[n]` is the filtered output. The two `x` delay taps and two `y` delay taps form the filter's memory (state), which is reset to zero before each new recording.
 
----
 
 ### Stage 1 — High-Pass Filter @ 20 Hz
 
@@ -407,7 +405,6 @@ Heart sounds begin at approximately 20 Hz. Everything below is biological or ele
 
 Butterworth design was chosen for its maximally flat passband — it doesn't ripple or distort heart sounds near the 20 Hz cutoff.
 
----
 
 ### Stage 2 — Notch Filter @ 50 Hz
 
@@ -434,7 +431,6 @@ The high Q factor of 35 creates an extremely **narrow notch** — only frequenci
 
 > **Note for 60 Hz regions (Americas, Japan):** Change `NOTCH_B1` and `NOTCH_A1` to `-1.6180f` and recompute `NOTCH_A2 = 0.98912f` unchanged. The centre frequency shifts; Q and gain stay the same.
 
----
 
 ### Stage 3 — Low-Pass Filter @ 300 Hz
 
@@ -463,7 +459,6 @@ The 300 Hz cutoff was chosen to capture the full cardiac frequency spectrum:
 
 At **Fs = 800 SPS**, the Nyquist limit is 400 Hz. A 300 Hz cutoff leaves a comfortable 100 Hz transition band before aliasing begins. Everything above 300 Hz (ADC quantisation noise, amplifier white noise, friction artefacts from the stethoscope tubing) is removed.
 
----
 
 ### Stage 4 — Amplitude Normalisation
 
@@ -482,7 +477,6 @@ Without normalisation, the ML model sees wildly different amplitude levels betwe
 3. Apply gain is capped at **20×** — if the signal is so quiet that 20× gain would be needed, the recording is likely just noise, and over-amplifying it would feed the ML model a magnified noise floor rather than a real heart signal
 4. The 80% headroom (26000 instead of 32767) prevents clipping from any rounding artefacts
 
----
 
 ### Filter Ordering — Why This Sequence?
 
