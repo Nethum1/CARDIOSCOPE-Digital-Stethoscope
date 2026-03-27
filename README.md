@@ -32,6 +32,9 @@
         <li><a href="#cnn-model">CNN Deep Learning Model</a></li>
       </ul>
     </li>
+    <li>
+      <a href="#digital-signal-processing-pipeline">Digial Signal Processing Pipeline</a>
+    </li>
     <li><a href="#dashboard">Real-Time Dashboard</a></li>
     <li><a href="#dataset">Dataset</a></li>
     <li><a href="#results">Results</a></li>
