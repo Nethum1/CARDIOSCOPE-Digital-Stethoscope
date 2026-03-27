@@ -206,7 +206,7 @@ The complete data flow of the system:
 
 <hr>
 
-### Heart & Lung Sounds
+## Heart & Lung Sounds
 
 Heart and lung sounds carry important diagnostic information:
 
