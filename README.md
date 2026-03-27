@@ -294,6 +294,207 @@ The CNN treats the MFCC matrix as a temporal sequence and uses convolutional fil
 
 <hr>
 
+## DSP Signal Processing Pipeline
+
+> **Digital signal processing applied on-device (ESP32) to clean raw heart sound recordings before ML classification.**
+
+---
+
+## Why DSP?
+
+The MAX9814 microphone captures everything — not just heart sounds. Raw recordings contain several layers of interference that directly hurt ML model accuracy:
+
+| Noise Source | Frequency | Origin |
+|---|---|---|
+| DC offset / baseline drift | 0 – 5 Hz | Capacitor coupling, temperature |
+| Breathing artifacts | 5 – 15 Hz | Patient movement during recording |
+| Power line hum | **50 Hz** | Mains electricity (strongest indoor noise) |
+| High-frequency hiss | 400 – 800 Hz | ADC quantisation, amplifier noise |
+| Useful heart sounds | **20 – 300 Hz** | S1, S2 (lub-dub), murmurs |
+
+Without filtering, the ML model receives a noisy signal where interference can be as strong as or stronger than the actual heart sounds. The DSP pipeline removes everything outside the 20–300 Hz cardiac band before the signal ever leaves the ESP32.
+
+---
+
+## Pipeline Overview
+
+Processing runs **after** recording and **before** HTTP transmission to the Flask server. This two-stage separation is intentional — the recording loop runs with microsecond-precision timing (1250 µs between samples at 800 SPS), and floating-point DSP math inside that loop would cause timing jitter and corrupt the waveform.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DSP Processing Pipeline                       │
+│                                                                  │
+│  Raw ADC buffer (4000 × int16)                                   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────┐                                            │
+│  │  1. High-Pass   │  @ 20 Hz  — removes DC + breathing rumble  │
+│  │  Butterworth 2  │                                            │
+│  └────────┬────────┘                                            │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌─────────────────┐                                            │
+│  │  2. Notch       │  @ 50 Hz  — removes mains interference     │
+│  │  IIR  Q = 35    │                                            │
+│  └────────┬────────┘                                            │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌─────────────────┐                                            │
+│  │  3. Low-Pass    │  @ 300 Hz — removes HF noise above cardiac │
+│  │  Butterworth 2  │             band                           │
+│  └────────┬────────┘                                            │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌─────────────────┐                                            │
+│  │  4. Normalize   │  Peak → 80% of ±32767 full 16-bit range   │
+│  │  Gain cap 20×   │                                            │
+│  └────────┬────────┘                                            │
+│           │                                                      │
+│           ▼                                                      │
+│  Clean buffer → HTTP POST → Flask ML server                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Filter Design
+
+All three filters use the **IIR Biquad (second-order section)** structure, sampled at **Fs = 800 Hz**.
+
+### Why IIR Biquad?
+
+- Only **5 multiplications and 4 additions** per sample
+- Only **4 state variables** (two delay taps for input, two for output)
+- No significant RAM overhead on a 4000-sample buffer
+- Hardware FPU on the ESP32 makes float arithmetic fast
+- Industry-standard in embedded medical DSP (ECG, PCG, EEG)
+
+### Transfer Function
+
+Every biquad stage follows this difference equation:
+
+```
+y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2]
+                - a1·y[n-1] - a2·y[n-2]
+```
+
+Where `x[n]` is the current input sample and `y[n]` is the filtered output. The two `x` delay taps and two `y` delay taps form the filter's memory (state), which is reset to zero before each new recording.
+
+---
+
+## Stage 1 — High-Pass Filter @ 20 Hz
+
+**Type:** Butterworth 2nd order
+**Cutoff:** 20 Hz
+**Purpose:** Removes everything below the cardiac band
+
+```cpp
+static const float HP_B0 =  0.89442f;
+static const float HP_B1 = -1.78885f;
+static const float HP_B2 =  0.89442f;
+static const float HP_A1 = -1.77822f;
+static const float HP_A2 =  0.79990f;
+```
+
+Heart sounds begin at approximately 20 Hz. Everything below is biological or electrical noise:
+
+- **DC offset** — the MAX9814 output is centred at ~1.65V (half of 3.3V supply). The ADC midpoint subtraction in `recordAudio()` removes most of this, but residual drift remains.
+- **Baseline wander** — slow movement of the stethoscope on the chest wall causes very low-frequency fluctuations.
+- **Breathing artifacts** — respiratory movement modulates the baseline at 0.1–0.5 Hz (12–30 breaths/min).
+
+Butterworth design was chosen for its maximally flat passband — it doesn't ripple or distort heart sounds near the 20 Hz cutoff.
+
+---
+
+## Stage 2 — Notch Filter @ 50 Hz
+
+**Type:** IIR Notch (infinite impulse response)
+**Centre frequency:** 50 Hz
+**Quality factor (Q):** 35
+**Purpose:** Removes mains power line interference
+
+```cpp
+static const float NOTCH_B0 =  0.99456f;
+static const float NOTCH_B1 = -1.83817f;
+static const float NOTCH_B2 =  0.99456f;
+static const float NOTCH_A1 = -1.83817f;
+static const float NOTCH_A2 =  0.98912f;
+```
+
+50 Hz mains hum is the **single strongest noise source** in any indoor medical device. It couples into the circuit through:
+
+- Power supply ripple on the 3.3V rail
+- Capacitive coupling from nearby cables and the human body
+- Ground loops between the ESP32, ADS1115, and USB power
+
+The high Q factor of 35 creates an extremely **narrow notch** — only frequencies within ±0.7 Hz of 50 Hz are attenuated. The rest of the spectrum, including the 45–55 Hz region that contains real cardiac sounds from patients with murmurs, is preserved.
+
+> **Note for 60 Hz regions (Americas, Japan):** Change `NOTCH_B1` and `NOTCH_A1` to `-1.6180f` and recompute `NOTCH_A2 = 0.98912f` unchanged. The centre frequency shifts; Q and gain stay the same.
+
+---
+
+## Stage 3 — Low-Pass Filter @ 300 Hz
+
+**Type:** Butterworth 2nd order
+**Cutoff:** 300 Hz
+**Purpose:** Removes high-frequency noise above the cardiac band
+
+```cpp
+static const float LP_B0 =  0.56901f;
+static const float LP_B1 =  1.13803f;
+static const float LP_B2 =  0.56901f;
+static const float LP_A1 =  0.94281f;
+static const float LP_A2 =  0.33333f;
+```
+
+The 300 Hz cutoff was chosen to capture the full cardiac frequency spectrum:
+
+| Sound | Frequency content |
+|---|---|
+| S1 (first heart sound — "lub") | 10 – 140 Hz |
+| S2 (second heart sound — "dub") | 10 – 150 Hz |
+| S3, S4 (gallop sounds) | 20 – 70 Hz |
+| Systolic murmurs | 100 – 300 Hz |
+| Diastolic murmurs | 100 – 250 Hz |
+| Aortic stenosis | up to 300 Hz |
+
+At **Fs = 800 SPS**, the Nyquist limit is 400 Hz. A 300 Hz cutoff leaves a comfortable 100 Hz transition band before aliasing begins. Everything above 300 Hz (ADC quantisation noise, amplifier white noise, friction artefacts from the stethoscope tubing) is removed.
+
+---
+
+## Stage 4 — Amplitude Normalisation
+
+**Purpose:** Scales every recording to a consistent amplitude for the ML model
+
+```cpp
+float gain = 26000.0f / (float)peak;
+if (gain > 20.0f) gain = 20.0f;   // hard cap
+```
+
+Without normalisation, the ML model sees wildly different amplitude levels between recordings. The same patient pressing firmly vs lightly produces a 5–10× amplitude difference. Most classifiers — especially CNNs operating on spectrograms — are sensitive to absolute amplitude, not just spectral shape.
+
+**Algorithm:**
+1. Find the peak absolute sample value across all 4000 samples
+2. Compute `gain = 26000 / peak` — this scales the peak to 80% of the int16 maximum (±32767)
+3. Apply gain is capped at **20×** — if the signal is so quiet that 20× gain would be needed, the recording is likely just noise, and over-amplifying it would feed the ML model a magnified noise floor rather than a real heart signal
+4. The 80% headroom (26000 instead of 32767) prevents clipping from any rounding artefacts
+
+---
+
+## Filter Ordering — Why This Sequence?
+
+The order HP → Notch → LP → Normalize is not arbitrary:
+
+1. **HP first** — removes DC offset and baseline drift before the notch and LP filters process the signal. A large DC component would cause the notch filter's internal state to saturate temporarily (transient response), corrupting the first ~50 samples of filtered output.
+
+2. **Notch second** — the 50 Hz spike is narrow and strong. Removing it before the LP filter prevents any spectral leakage from that spike from being smeared into adjacent frequencies by the LP's transition band.
+
+3. **LP third** — removes all remaining high-frequency content after the notch has cleaned up 50 Hz.
+
+4. **Normalize last** — always runs on the fully cleaned signal, so the gain calculation reflects only genuine cardiac content, not noise that might have been present before filtering.
+
+<hr>
+
 ## Real-Time Dashboard
 
 The dashboard (`dashboard.html`) is a single HTML file served by Flask. It connects to the server via `fetch()` and updates all charts in real time.
