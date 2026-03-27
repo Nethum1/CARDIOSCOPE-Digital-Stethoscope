@@ -298,9 +298,9 @@ The CNN treats the MFCC matrix as a temporal sequence and uses convolutional fil
 
 > **Digital signal processing applied on-device (ESP32) to clean raw heart sound recordings before ML classification.**
 
----
 
-## Why DSP?
+
+### Why DSP?
 
 The MAX9814 microphone captures everything — not just heart sounds. Raw recordings contain several layers of interference that directly hurt ML model accuracy:
 
@@ -316,7 +316,7 @@ Without filtering, the ML model receives a noisy signal where interference can b
 
 ---
 
-## Pipeline Overview
+### Pipeline Overview
 
 Processing runs **after** recording and **before** HTTP transmission to the Flask server. This two-stage separation is intentional — the recording loop runs with microsecond-precision timing (1250 µs between samples at 800 SPS), and floating-point DSP math inside that loop would cause timing jitter and corrupt the waveform.
 
@@ -357,11 +357,11 @@ Processing runs **after** recording and **before** HTTP transmission to the Flas
 
 ---
 
-## Filter Design
+### Filter Design
 
 All three filters use the **IIR Biquad (second-order section)** structure, sampled at **Fs = 800 Hz**.
 
-### Why IIR Biquad?
+#### Why IIR Biquad?
 
 - Only **5 multiplications and 4 additions** per sample
 - Only **4 state variables** (two delay taps for input, two for output)
@@ -369,7 +369,7 @@ All three filters use the **IIR Biquad (second-order section)** structure, sampl
 - Hardware FPU on the ESP32 makes float arithmetic fast
 - Industry-standard in embedded medical DSP (ECG, PCG, EEG)
 
-### Transfer Function
+#### Transfer Function
 
 Every biquad stage follows this difference equation:
 
@@ -382,7 +382,7 @@ Where `x[n]` is the current input sample and `y[n]` is the filtered output. The 
 
 ---
 
-## Stage 1 — High-Pass Filter @ 20 Hz
+### Stage 1 — High-Pass Filter @ 20 Hz
 
 **Type:** Butterworth 2nd order
 **Cutoff:** 20 Hz
@@ -406,7 +406,7 @@ Butterworth design was chosen for its maximally flat passband — it doesn't rip
 
 ---
 
-## Stage 2 — Notch Filter @ 50 Hz
+### Stage 2 — Notch Filter @ 50 Hz
 
 **Type:** IIR Notch (infinite impulse response)
 **Centre frequency:** 50 Hz
@@ -433,7 +433,7 @@ The high Q factor of 35 creates an extremely **narrow notch** — only frequenci
 
 ---
 
-## Stage 3 — Low-Pass Filter @ 300 Hz
+### Stage 3 — Low-Pass Filter @ 300 Hz
 
 **Type:** Butterworth 2nd order
 **Cutoff:** 300 Hz
@@ -462,7 +462,7 @@ At **Fs = 800 SPS**, the Nyquist limit is 400 Hz. A 300 Hz cutoff leaves a comfo
 
 ---
 
-## Stage 4 — Amplitude Normalisation
+### Stage 4 — Amplitude Normalisation
 
 **Purpose:** Scales every recording to a consistent amplitude for the ML model
 
@@ -481,7 +481,7 @@ Without normalisation, the ML model sees wildly different amplitude levels betwe
 
 ---
 
-## Filter Ordering — Why This Sequence?
+### Filter Ordering — Why This Sequence?
 
 The order HP → Notch → LP → Normalize is not arbitrary:
 
