@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioScope — Digital Stethoscope</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --bg:      #050c18;
+  --surf:    #091525;
+  --surf2:   #0d1e32;
+  --border:  #172d4a;
+  --cyan:    #00d4ff;
+  --green:   #00ff88;
+  --red:     #ff3d5a;
+  --amber:   #ffb820;
+  --violet:  #a855f7;
+  --text:    #c8dff5;
+  --muted:   #3d6080;
+  --mono:    'Share Tech Mono', monospace;
+  --head:    'Rajdhani', sans-serif;
+  --body:    'DM Sans', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,0.07),transparent);
+}
+.topbar{
+  position:sticky;top:0;z-index:200;
+  background:rgba(5,12,24,0.96);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(16px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;
+}
+.logo{font-family:var(--head);font-size:1.35em;font-weight:700;
+  color:var(--cyan);letter-spacing:3px;text-transform:uppercase;}
+.logo em{color:var(--text);font-style:normal;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.clock{font-family:var(--mono);font-size:0.82em;color:var(--muted);}
+.conn-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 14px;border-radius:20px;border:1px solid;
+  font-family:var(--mono);font-size:0.72em;transition:all .3s;
+}
+.conn-pill.connected{border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.07);color:var(--green);}
+.conn-pill.demo{border-color:rgba(255,184,32,.3);background:rgba(255,184,32,.07);color:var(--amber);}
+.conn-pill.error{border-color:rgba(255,61,90,.3);background:rgba(255,61,90,.07);color:var(--red);}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:sonar 2s infinite;}
+@keyframes sonar{0%,100%{box-shadow:0 0 0 0 currentColor}70%{box-shadow:0 0 0 6px transparent}}
+
+.page{position:relative;z-index:1;padding:16px 20px;display:flex;flex-direction:column;gap:14px;}
+
+/* STATS BAR */
+.stats-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+.stat{background:var(--surf);border:1px solid var(--border);border-radius:8px;
+  padding:11px 14px;position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--c,var(--cyan));}
+.stat-val{font-family:var(--head);font-size:1.6em;font-weight:700;color:var(--c,var(--cyan));}
+.stat-lbl{font-size:0.68em;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+
+.main-grid{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start;}
+
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.ph{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surf2);}
+.pt{font-family:var(--head);font-size:0.75em;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;color:var(--cyan);}
+.pb{padding:14px 16px;}
+
+.diag-box{
+  text-align:center;padding:18px 12px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+  margin-bottom:14px;position:relative;overflow:hidden;transition:border-color .4s;
+}
+.diag-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--dc,var(--cyan));transition:background .4s;}
+.diag-name{font-family:var(--head);font-size:2.1em;font-weight:700;
+  letter-spacing:4px;text-transform:uppercase;color:var(--dc,var(--cyan));transition:color .4s;}
+.diag-conf{font-family:var(--mono);font-size:0.78em;color:var(--muted);margin-top:3px;}
+.diag-msg{font-size:0.78em;line-height:1.5;margin-top:8px;color:var(--text);}
+.diag-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;}
+.metric{background:var(--surf2);border-radius:5px;padding:6px;text-align:center;}
+.metric-val{font-family:var(--mono);font-size:0.82em;color:var(--cyan);}
+.metric-lbl{font-size:0.62em;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);}
+
+.fl{display:block;font-size:0.67em;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:4px;font-family:var(--mono);}
+.fi{width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:5px;padding:8px 10px;color:var(--text);
+  font-family:var(--body);font-size:0.85em;
+  transition:border-color .2s,box-shadow .2s;margin-bottom:10px;}
+.fi:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+textarea.fi{resize:vertical;min-height:60px;}
+select.fi{cursor:pointer;}
+select.fi option{background:var(--surf2);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.btn{width:100%;padding:9px;border:none;border-radius:6px;cursor:pointer;
+  font-family:var(--head);font-size:0.85em;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;transition:all .2s;margin-bottom:6px;}
+.btn-save{background:linear-gradient(135deg,var(--cyan),#007ca3);color:var(--bg);}
+.btn-save:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(0,212,255,.35);}
+.btn-pdf{background:linear-gradient(135deg,#7c3aed,#4c1d95);color:#fff;}
+.btn-pdf:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(124,58,237,.35);}
+.btn-clr{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-clr:hover{border-color:var(--red);color:var(--red);}
+
+.right-col{display:flex;flex-direction:column;gap:12px;}
+.charts-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+.badge{display:inline-block;padding:2px 9px;border-radius:3px;
+  font-family:var(--mono);font-size:0.72em;font-weight:bold;
+  letter-spacing:1px;text-transform:uppercase;}
+.b-normal    {background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.25);}
+.b-murmur    {background:rgba(255,61,90,.1);color:var(--red);border:1px solid rgba(255,61,90,.25);}
+.b-arrhythmia{background:rgba(255,184,32,.1);color:var(--amber);border:1px solid rgba(255,184,32,.25);}
+.b-extrasound{background:rgba(168,85,247,.1);color:var(--violet);border:1px solid rgba(168,85,247,.25);}
+
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.tag{padding:2px 8px;border-radius:3px;font-size:0.68em;
+  font-family:var(--mono);background:var(--surf2);
+  border:1px solid var(--border);color:var(--muted);}
+.tag.hi{border-color:var(--cyan);color:var(--cyan);}
+.tag.warn{border-color:var(--red);color:var(--red);}
+
+.tbl{width:100%;border-collapse:collapse;font-size:0.8em;}
+.tbl th{background:var(--surf2);padding:8px 12px;text-align:left;
+  color:var(--muted);font-family:var(--mono);font-size:0.72em;
+  letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 12px;border-bottom:1px solid rgba(23,45,74,.5);}
+.tbl tr:hover td{background:rgba(0,212,255,.025);}
+.scrollbox{max-height:240px;overflow-y:auto;}
+.scrollbox::-webkit-scrollbar{width:3px;}
+.scrollbox::-webkit-scrollbar-thumb{background:var(--border);}
+
+.sig-badge{display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:0.7em;padding:2px 8px;border-radius:3px;}
+.sig-live{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2);}
+.sig-demo{background:rgba(255,184,32,.1);color:var(--amber);border:1px solid rgba(255,184,32,.2);}
+
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;
+  background:var(--surf2);border:1px solid var(--border);
+  border-left:3px solid var(--green);border-radius:7px;
+  padding:12px 18px;font-size:0.83em;
+  transform:translateY(60px);opacity:0;transition:all .3s;max-width:280px;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+#pdftgt{display:none;width:800px;background:#fff;color:#111;
+  padding:36px;font-family:'DM Sans',sans-serif;line-height:1.5;}
+#pdftgt h1{font-size:1.7em;color:#050c18;letter-spacing:2px;margin-bottom:2px;}
+#pdftgt h2{font-size:1em;color:#050c18;margin:18px 0 8px;
+  border-bottom:2px solid #050c18;padding-bottom:3px;letter-spacing:1px;text-transform:uppercase;}
+#pdftgt .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0;}
+#pdftgt .pf{padding:9px 12px;background:#f0f5fa;border-radius:5px;border-left:3px solid #00aacc;}
+#pdftgt .pf strong{display:block;font-size:0.67em;text-transform:uppercase;color:#888;letter-spacing:.8px;margin-bottom:1px;}
+#pdftgt .presult{text-align:center;padding:18px;border-radius:8px;margin:12px 0;}
+#pdftgt table{width:100%;border-collapse:collapse;font-size:0.82em;margin-top:6px;}
+#pdftgt th{background:#050c18;color:#fff;padding:7px 10px;text-align:left;}
+#pdftgt td{padding:7px 10px;border-bottom:1px solid #e0e8f0;}
+#pdftgt tr:nth-child(even) td{background:#f8fafc;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="dot" style="color:var(--green)"></div>
+    <div class="logo">Cardio<em>Scope</em></div>
+    <span style="font-family:var(--mono);font-size:0.65em;color:var(--muted);margin-left:4px">DIGITAL STETHOSCOPE v 1.0</span>
+  </div>
+  <div class="topbar-right">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="conn-pill demo" id="conn-pill">
+      <div class="dot"></div>
+      <span id="conn-txt">CONNECTING...</span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="stats-bar">
+    <div class="stat" style="--c:var(--green)">
+      <div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total Records</div>
+    </div>
+    <div class="stat" style="--c:var(--cyan)">
+      <div class="stat-val" id="s-normal">0</div><div class="stat-lbl">Normal</div>
+    </div>
+    <div class="stat" style="--c:var(--red)">
+      <div class="stat-val" id="s-abnormal">0</div><div class="stat-lbl">Abnormal</div>
+    </div>
+    <div class="stat" style="--c:var(--amber)">
+      <div class="stat-val" id="s-conf">–</div><div class="stat-lbl">Avg Confidence</div>
+    </div>
+    <div class="stat" style="--c:var(--violet)">
+      <div class="stat-val" id="s-rms">–</div><div class="stat-lbl">RMS (dB)</div>
+    </div>
+    <div class="stat" style="--c:var(--cyan)">
+      <div class="stat-val" id="s-sc">–</div><div class="stat-lbl">Spec. Centroid Hz</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <div class="panel">
+        <div class="ph">
+          <span class="pt">Live Diagnosis</span>
+          <span id="sig-badge" class="sig-badge sig-demo">● DEMO</span>
+        </div>
+        <div class="pb">
+          <div class="diag-box" id="diag-box">
+            <div class="diag-name" id="diag-name">STANDBY</div>
+            <div class="diag-conf" id="diag-conf">Waiting for ESP32...</div>
+            <div class="diag-msg"  id="diag-msg">Press button on device to record</div>
+            <div class="diag-metrics">
+              <div class="metric"><div class="metric-val" id="m-rms">–</div><div class="metric-lbl">RMS dB</div></div>
+              <div class="metric"><div class="metric-val" id="m-zcr">–</div><div class="metric-lbl">ZCR</div></div>
+              <div class="metric"><div class="metric-val" id="m-dur">–</div><div class="metric-lbl">Duration</div></div>
+            </div>
+          </div>
+          <div class="tags" id="diag-tags"><span class="tag">Awaiting data...</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph">
+          <span class="pt">Patient Record</span>
+          <span style="font-family:var(--mono);font-size:0.67em;color:var(--muted)" id="rec-id">ID: ---</span>
+        </div>
+        <div class="pb">
+          <label class="fl">Full Name</label>
+          <input class="fi" id="f-name" type="text" placeholder="e.g. Kasun Perera">
+          <div class="frow">
+            <div><label class="fl">Age</label><input class="fi" id="f-age" type="number" placeholder="25" min="1" max="120"></div>
+            <div><label class="fl">Gender</label>
+              <select class="fi" id="f-gender">
+                <option value="">–</option><option>Male</option><option>Female</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="frow">
+            <div><label class="fl">Blood Pressure</label><input class="fi" id="f-bp" type="text" placeholder="120/80 mmHg"></div>
+            <div><label class="fl">Heart Rate</label><input class="fi" id="f-hr" type="text" placeholder="72 bpm"></div>
+          </div>
+          <div class="frow">
+            <div><label class="fl">Weight (kg)</label><input class="fi" id="f-weight" type="number" placeholder="70"></div>
+            <div><label class="fl">Height (cm)</label><input class="fi" id="f-height" type="number" placeholder="170"></div>
+          </div>
+          <label class="fl">Doctor / Clinician</label>
+          <input class="fi" id="f-doctor" type="text" placeholder="Dr. Nimal Silva">
+          <label class="fl">Notes / Symptoms</label>
+          <textarea class="fi" id="f-notes" placeholder="chest pain, shortness of breath..."></textarea>
+          <button class="btn btn-save" onclick="saveRecord()">💾 Save Record</button>
+          <button class="btn btn-pdf"  onclick="exportPDF()">📄 Export PDF Report</button>
+          <button class="btn btn-clr"  onclick="clearForm()">✕ Clear Form</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-col">
+
+      <div class="panel">
+        <div class="ph">
+          <span class="pt">Audio Waveform</span>
+          <span style="font-family:var(--mono);font-size:0.67em;color:var(--muted)" id="wave-meta">800 SPS · MAX9814 · ADS1115</span>
+        </div>
+        <div class="pb" style="padding:10px 14px">
+          <canvas id="waveChart" height="100"></canvas>
+        </div>
+      </div>
+
+      <div class="charts-3">
+        <div class="panel">
+          <div class="ph"><span class="pt">Class Probability</span></div>
+          <div class="pb"><canvas id="probaChart" height="180"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="pt">Confidence Trend</span></div>
+          <div class="pb"><canvas id="trendChart" height="180"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="pt">Session Distribution</span></div>
+          <div class="pb"><canvas id="donutChart" height="180"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph">
+          <span class="pt">Session History</span>
+          <button onclick="clearHistory()" style="background:none;border:1px solid var(--border);color:var(--muted);
+            padding:2px 10px;border-radius:4px;cursor:pointer;font-size:0.72em;font-family:var(--mono)">Clear</button>
+        </div>
+        <div class="scrollbox">
+          <table class="tbl">
+            <thead><tr>
+              <th>#</th><th>Patient</th><th>Time</th>
+              <th>Result</th><th>Conf</th><th>BP</th><th>HR</th>
+            </tr></thead>
+            <tbody id="hist-body">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No records saved yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="pdftgt"></div>
+
+<script>
+// ============================================================
+//  SERVER URL — Flask runs on localhost:5000
+// ============================================================
+const SERVER = 'http://localhost:5000';
+
+// ============================================================
+//  CONSTANTS
+// ============================================================
+const COLORS = {
+  normal:'#00ff88', murmur:'#ff3d5a', arrhythmia:'#ffb820', extrasound:'#a855f7'
+};
+const MESSAGES = {
+  normal    :'Heart sounds appear NORMAL. No anomalies detected.',
+  murmur    :'Possible heart MURMUR detected. Consult a cardiologist.',
+  arrhythmia:'Irregular rhythm (ARRHYTHMIA) detected. Seek medical evaluation.',
+  extrasound:'Extra heart sounds detected. Further examination advised.',
+};
+
+let savedRecords = JSON.parse(localStorage.getItem('stetho_v2')||'[]');
+let recCounter   = savedRecords.length ? Math.max(...savedRecords.map(r=>r.id)) : 0;
+let currentPred  = null;
+let confHistory  = [];
+let labelHistory = [];
+let serverOnline = false;
+let lastTimestamp = '';
+
+// ============================================================
+//  CLOCK
+// ============================================================
+setInterval(()=>{
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-GB',{hour12:false});
+},1000);
+
+// ============================================================
+//  CHART DEFAULTS
+// ============================================================
+Chart.defaults.color       = '#3d6080';
+Chart.defaults.borderColor = '#172d4a';
+Chart.defaults.font.family = "'Share Tech Mono', monospace";
+Chart.defaults.font.size   = 10;
+
+// Waveform
+const wCtx = document.getElementById('waveChart').getContext('2d');
+const waveChart = new Chart(wCtx, {
+  type:'line',
+  data:{
+    labels: Array(200).fill(''),
+    datasets:[{
+      data: Array(200).fill(0),
+      borderColor:'#00d4ff', borderWidth:1.2,
+      fill:true,
+      backgroundColor: ctx=>{
+        const g = ctx.chart.ctx.createLinearGradient(0,0,0,100);
+        g.addColorStop(0,'rgba(0,212,255,0.18)');
+        g.addColorStop(1,'rgba(0,212,255,0.0)');
+        return g;
+      },
+      tension:0.3, pointRadius:0,
+    }]
+  },
+  options:{
+    animation:false, responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{display:false},
+      y:{display:true,
+        ticks:{color:'#172d4a',font:{size:8},maxTicksLimit:5},
+        grid:{color:'rgba(23,45,74,0.5)'}
+      }
+    }
+  }
+});
+
+// Probability
+const pCtx = document.getElementById('probaChart').getContext('2d');
+const probaChart = new Chart(pCtx,{
+  type:'bar',
+  data:{
+    labels:['Normal','Murmur','Arrhythmia','Extra'],
+    datasets:[{
+      data:[0.25,0.25,0.25,0.25],
+      backgroundColor:['rgba(0,255,136,.65)','rgba(255,61,90,.65)',
+                       'rgba(255,184,32,.65)','rgba(168,85,247,.65)'],
+      borderColor:['#00ff88','#ff3d5a','#ffb820','#a855f7'],
+      borderWidth:1, borderRadius:4,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false, indexAxis:'y',
+    animation:{duration:400}, plugins:{legend:{display:false}},
+    scales:{
+      x:{min:0,max:1,
+        ticks:{callback:v=>(v*100).toFixed(0)+'%',font:{size:9}},
+        grid:{color:'rgba(23,45,74,0.4)'}},
+      y:{ticks:{font:{size:9},color:'#7aa'},grid:{display:false}}
+    }
+  }
+});
+
+// Trend
+const tCtx = document.getElementById('trendChart').getContext('2d');
+const trendChart = new Chart(tCtx,{
+  type:'line',
+  data:{labels:[],datasets:[{
+    label:'Confidence', data:[],
+    borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.08)',
+    fill:true, tension:0.4,
+    pointRadius:4, pointHoverRadius:5, pointBackgroundColor:[],
+  }]},
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:300}, plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{font:{size:8},maxTicksLimit:6},grid:{color:'rgba(23,45,74,0.4)'}},
+      y:{min:0,max:1,
+        ticks:{callback:v=>(v*100).toFixed(0)+'%',font:{size:9}},
+        grid:{color:'rgba(23,45,74,0.4)'}}
+    }
+  }
+});
+
+// Donut
+const dCtx = document.getElementById('donutChart').getContext('2d');
+const donutChart = new Chart(dCtx,{
+  type:'doughnut',
+  data:{
+    labels:['Normal','Murmur','Arrhythmia','Extra'],
+    datasets:[{
+      data:[1,0,0,0],
+      backgroundColor:['rgba(0,255,136,.75)','rgba(255,61,90,.75)',
+                       'rgba(255,184,32,.75)','rgba(168,85,247,.75)'],
+      borderColor:'#050c18', borderWidth:3,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false, cutout:'62%',
+    animation:{duration:400},
+    plugins:{legend:{position:'bottom',labels:{font:{size:9},color:'#3d6080',padding:7,boxWidth:9}}}
+  }
+});
+
+// ============================================================
+//  APPLY PREDICTION — updates all charts and panels
+// ============================================================
+function applyPrediction(data) {
+  currentPred = data;
+  const { prediction, confidence, message, all_probabilities,
+          waveform, timestamp,
+          rms_db, zcr, spectral_centroid, duration_sec,
+          audio_samples, sample_rate, mic_type } = data;
+
+  const color = COLORS[prediction] || '#00d4ff';
+
+  // Diagnosis box
+  const box = document.getElementById('diag-box');
+  box.style.setProperty('--dc', color);
+  document.getElementById('diag-name').textContent = prediction.toUpperCase();
+  document.getElementById('diag-conf').textContent =
+    `Confidence: ${(confidence*100).toFixed(1)}%  ·  ${timestamp}`;
+  document.getElementById('diag-msg').textContent =
+    message || MESSAGES[prediction] || '';
+  document.getElementById('m-rms').textContent = rms_db     != null ? `${rms_db} dB` : '–';
+  document.getElementById('m-zcr').textContent = zcr        != null ? zcr.toFixed(4) : '–';
+  document.getElementById('m-dur').textContent = duration_sec != null ? `${duration_sec}s` : '–';
+
+  // Stats bar
+  document.getElementById('s-rms').textContent =
+    rms_db != null ? rms_db : '–';
+  document.getElementById('s-sc').textContent  =
+    spectral_centroid != null ? Math.round(spectral_centroid) : '–';
+
+  // Waveform
+  if (waveform && waveform.length > 0) {
+    waveChart.data.datasets[0].data = waveform;
+    waveChart.data.datasets[0].borderColor = color;
+    const sr    = sample_rate || 800;
+    const dur   = duration_sec || (audio_samples ? (audio_samples/sr).toFixed(1) : '?');
+    const mtype = mic_type || 'MAX9814·ADS1115';
+    document.getElementById('wave-meta').textContent =
+      `${waveform.length} pts · ${dur}s · ${sr} SPS · ${mtype}`;
+    waveChart.update('none');
+  }
+
+  // Probability bars
+  if (all_probabilities) {
+    const vals = ['normal','murmur','arrhythmia','extrasound']
+                   .map(k => all_probabilities[k] || 0);
+    probaChart.data.datasets[0].data = vals;
+    probaChart.update();
+  }
+
+  // Trend
+  confHistory.push(confidence);
+  labelHistory.push(prediction);
+  if(confHistory.length > 25){ confHistory.shift(); labelHistory.shift(); }
+  trendChart.data.labels = confHistory.map((_,i)=>
+    i===confHistory.length-1 ? timestamp : '');
+  trendChart.data.datasets[0].data = [...confHistory];
+  trendChart.data.datasets[0].pointBackgroundColor =
+    labelHistory.map(l => COLORS[l]||'#00d4ff');
+  trendChart.update();
+
+  // Donut
+  const counts=[0,0,0,0];
+  labelHistory.forEach(l=>{
+    if(l==='normal')          counts[0]++;
+    else if(l==='murmur')     counts[1]++;
+    else if(l==='arrhythmia') counts[2]++;
+    else                      counts[3]++;
+  });
+  donutChart.data.datasets[0].data = counts.map(c=>c||0.001);
+  donutChart.update();
+
+  // Analysis tags
+  const tags = [];
+  tags.push(`<span class="tag hi">${prediction.toUpperCase()}</span>`);
+  tags.push(`<span class="tag hi">${(confidence*100).toFixed(1)}% conf</span>`);
+  if (confidence > 0.9)        tags.push(`<span class="tag hi">HIGH CERTAINTY</span>`);
+  if (confidence < 0.6)        tags.push(`<span class="tag warn">LOW CERTAINTY</span>`);
+  if (prediction !== 'normal') tags.push(`<span class="tag warn">ANOMALY DETECTED</span>`);
+  if (all_probabilities) {
+    const sorted = Object.entries(all_probabilities).sort((a,b)=>b[1]-a[1]);
+    if (sorted[1]) tags.push(`<span class="tag">2nd: ${sorted[1][0]} ${(sorted[1][1]*100).toFixed(1)}%</span>`);
+  }
+  if (rms_db != null)         tags.push(`<span class="tag">RMS ${rms_db} dB</span>`);
+  if (spectral_centroid)      tags.push(`<span class="tag">SC ${Math.round(spectral_centroid)} Hz</span>`);
+  if (duration_sec)           tags.push(`<span class="tag">${duration_sec}s recording</span>`);
+  document.getElementById('diag-tags').innerHTML = tags.join('');
+
+  updateStats();
+}
+
+// ============================================================
+//  POLL SERVER — fetches /latest every 2 seconds
+// ============================================================
+async function pollServer() {
+  try {
+    const res = await fetch(`${SERVER}/latest`,
+                            {signal: AbortSignal.timeout(3000)});
+    if (!res.ok) throw new Error('not ok');
+    const data = await res.json();
+
+    if (data.empty) return;
+
+    if (data.timestamp !== lastTimestamp) {
+      lastTimestamp = data.timestamp;
+      applyPrediction(data);
+    }
+
+    if (!serverOnline) {
+      serverOnline = true;
+      setConn('connected','ESP32 LIVE');
+      document.getElementById('sig-badge').className = 'sig-badge sig-live';
+      document.getElementById('sig-badge').textContent = '● LIVE';
+    }
+  } catch(e) {
+    if (serverOnline) {
+      serverOnline = false;
+      setConn('error','SERVER OFFLINE');
+      document.getElementById('sig-badge').className = 'sig-badge sig-demo';
+      document.getElementById('sig-badge').textContent = '● OFFLINE';
+    }
+  }
+}
+
+function setConn(cls, txt) {
+  const p = document.getElementById('conn-pill');
+  p.className = `conn-pill ${cls}`;
+  document.getElementById('conn-txt').textContent = txt;
+}
+
+// ============================================================
+//  DEMO MODE — realistic simulation when server offline
+// ============================================================
+function makeDemoWave(label) {
+  const N=200, w=[];
+  for(let i=0;i<N;i++){
+    const t=i/N; let v=0;
+    if(label==='normal')
+      v=0.5*(Math.sin(t*Math.PI*12)+0.3*Math.sin(t*Math.PI*40)
+             +(Math.sin(t*Math.PI*12)>0.8?0.4:0));
+    else if(label==='murmur')
+      v=0.45*(Math.sin(t*Math.PI*14)+0.5*Math.sin(t*Math.PI*28)+Math.random()*0.25);
+    else if(label==='arrhythmia'){
+      const beat=Math.floor(t*6)%3===0;
+      v=beat?0.8*Math.sin(t*Math.PI*60):0.1*Math.sin(t*Math.PI*8);
+    } else
+      v=0.5*(Math.sin(t*Math.PI*12)+0.35*Math.sin(t*Math.PI*26)+0.2*Math.sin(t*Math.PI*50));
+    w.push(v);
+  }
+  return w;
+}
+
+const demoClasses=['normal','normal','normal','murmur','arrhythmia','normal','extrasound','normal'];
+let demoIdx=0;
+function runDemoTick() {
+  const prediction = demoClasses[demoIdx++ % demoClasses.length];
+  const confidence = 0.62+Math.random()*0.33;
+  const proba={};
+  ['normal','murmur','arrhythmia','extrasound'].forEach(c=>{
+    proba[c]=c===prediction?confidence:Math.random()*(1-confidence)/3;
+  });
+  applyPrediction({
+    prediction, confidence,
+    all_probabilities : proba,
+    message           : MESSAGES[prediction],
+    waveform          : makeDemoWave(prediction),
+    timestamp         : new Date().toLocaleTimeString('en-GB',{hour12:false}),
+    rms_db            : parseFloat((-18+Math.random()*8).toFixed(1)),
+    zcr               : parseFloat((0.04+Math.random()*0.06).toFixed(5)),
+    spectral_centroid : parseFloat((80+Math.random()*120).toFixed(1)),
+    audio_samples     : 4000,
+    sample_rate       : 800,
+    duration_sec      : 5.0,
+    mic_type          : 'MAX9814-ADS1115',
+    adc_gain          : 'GAIN_TWO',
+  });
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+async function init() {
+  try {
+    const r = await fetch(`${SERVER}/status`,
+                          {signal: AbortSignal.timeout(2000)});
+    if (r.ok) {
+      const s = await r.json();
+      setConn('connected', s.model_loaded ? 'MODEL ACTIVE' : 'DEMO MODE');
+      setInterval(pollServer, 2000);
+      pollServer();
+      return;
+    }
+  } catch {}
+
+  setConn('demo','DEMO MODE');
+  runDemoTick();
+  setInterval(()=>{ if(!serverOnline) runDemoTick(); }, 7000);
+
+  setInterval(async()=>{
+    try {
+      const r=await fetch(`${SERVER}/status`,{signal:AbortSignal.timeout(1500)});
+      if(r.ok && !serverOnline){
+        serverOnline=true;
+        setConn('connected','CONNECTED');
+        setInterval(pollServer,2000);
+        pollServer();
+      }
+    } catch {}
+  }, 5000);
+}
+init();
+
+// ============================================================
+//  SAVE PATIENT RECORD
+// ============================================================
+function saveRecord() {
+  if (!currentPred) { showToast('⚠ No prediction yet!','amber'); return; }
+  const get = id => document.getElementById(id).value.trim()||'–';
+  const record = {
+    id: ++recCounter,
+    name:   get('f-name'),  age:    get('f-age'),
+    gender: get('f-gender'),bp:     get('f-bp'),
+    hr:     get('f-hr'),    weight: get('f-weight'),
+    height: get('f-height'),doctor: get('f-doctor'),
+    notes:  get('f-notes'),
+    prediction:        currentPred.prediction,
+    confidence:        currentPred.confidence,
+    all_probabilities: currentPred.all_probabilities,
+    message:           currentPred.message,
+    rms_db:            currentPred.rms_db,
+    spectral_centroid: currentPred.spectral_centroid,
+    sample_rate:       currentPred.sample_rate,
+    duration_sec:      currentPred.duration_sec,
+    timestamp: new Date().toLocaleString(),
+    time:      new Date().toLocaleTimeString(),
+  };
+  savedRecords.unshift(record);
+  localStorage.setItem('stetho_v2', JSON.stringify(savedRecords.slice(0,200)));
+  document.getElementById('rec-id').textContent =
+    `ID: ${String(recCounter).padStart(3,'0')}`;
+  renderTable();
+  updateStats();
+  showToast(`✓ Saved — ${record.name}`);
+}
+
+// ============================================================
+//  STATS
+// ============================================================
+function updateStats() {
+  const total = savedRecords.length;
+  const norm  = savedRecords.filter(r=>r.prediction==='normal').length;
+  const ab    = total-norm;
+  const avgC  = total
+    ? (savedRecords.reduce((s,r)=>s+(r.confidence||0),0)/total*100).toFixed(0)+'%'
+    : '–';
+  document.getElementById('s-total').textContent    = total;
+  document.getElementById('s-normal').textContent   = norm;
+  document.getElementById('s-abnormal').textContent = ab;
+  document.getElementById('s-conf').textContent     = avgC;
+}
+
+// ============================================================
+//  TABLE
+// ============================================================
+function renderTable() {
+  const body = document.getElementById('hist-body');
+  if (!savedRecords.length) {
+    body.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px">No records saved yet</td></tr>';
+    return;
+  }
+  body.innerHTML = savedRecords.slice(0,50).map(r=>`
+    <tr>
+      <td style="font-family:var(--mono);color:var(--muted)">${String(r.id).padStart(3,'0')}</td>
+      <td>${r.name} <span style="color:var(--muted);font-size:0.82em">${r.age}y ${r.gender}</span></td>
+      <td style="font-family:var(--mono);font-size:0.78em;color:var(--muted)">${r.time}</td>
+      <td><span class="badge b-${r.prediction}">${r.prediction.toUpperCase()}</span></td>
+      <td style="font-family:var(--mono)">${(r.confidence*100).toFixed(1)}%</td>
+      <td style="color:var(--muted)">${r.bp}</td>
+      <td style="color:var(--muted)">${r.hr}</td>
+    </tr>`).join('');
+}
+
+// ============================================================
+//  PDF EXPORT
+// ============================================================
+async function exportPDF() {
+  if (!savedRecords.length && !currentPred) {
+    showToast('⚠ No data to export!','amber'); return;
+  }
+  showToast('⏳ Building PDF...','cyan');
+
+  const pat   = savedRecords[0] || {};
+  const pred  = currentPred     || pat;
+  const color = COLORS[pred?.prediction] || '#00aacc';
+
+  let imgs = {};
+  for (const id of ['waveChart','probaChart','trendChart','donutChart']) {
+    try {
+      const el    = document.getElementById(id);
+      const panel = el.closest('.panel') || el;
+      const c     = await html2canvas(panel, {backgroundColor:'#091525', scale:1.6});
+      imgs[id]    = c.toDataURL('image/png');
+    } catch(e){ console.warn(id, e); }
+  }
+
+  const probHTML = pred?.all_probabilities
+    ? Object.entries(pred.all_probabilities).sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>`<tr>
+          <td>${k.charAt(0).toUpperCase()+k.slice(1)}</td>
+          <td><b>${(v*100).toFixed(1)}%</b></td>
+          <td style="background:#f0f0f0;padding:2px 6px">
+            <div style="width:${Math.round(v*180)}px;height:12px;background:${COLORS[k]||'#aaa'};border-radius:2px"></div>
+          </td></tr>`).join('') : '';
+
+  const histHTML = savedRecords.slice(0,15).map(r=>`
+    <tr><td>${String(r.id).padStart(3,'0')}</td><td>${r.name}</td>
+    <td>${r.age}</td><td>${r.prediction.toUpperCase()}</td>
+    <td>${(r.confidence*100).toFixed(1)}%</td>
+    <td>${r.bp}</td><td>${r.hr}</td><td>${r.timestamp}</td></tr>`).join('');
+
+  const tgt = document.getElementById('pdftgt');
+  tgt.style.display='block';
+  tgt.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <h1>CARDIO<span style="color:#007aaa">SCOPE</span></h1>
+        <div style="color:#888;font-size:0.82em">Digital Stethoscope — Clinical Report</div>
+      </div>
+      <div style="text-align:right;font-size:0.78em;color:#888">
+        <div>Date: ${new Date().toLocaleDateString()}</div>
+        <div>Time: ${new Date().toLocaleTimeString()}</div>
+        <div>ID: ${String(recCounter).padStart(3,'0')}</div>
+        <div>Device: MAX9814 + ADS1115 @ ${pred?.sample_rate||800} SPS</div>
+      </div>
+    </div>
+    <div style="height:4px;background:linear-gradient(90deg,#050c18,#007aaa,#00d4ff);
+      border-radius:2px;margin:16px 0 20px"></div>
+    <h2>Patient Information</h2>
+    <div class="pgrid">
+      <div class="pf"><strong>Full Name</strong>${pat.name||'–'}</div>
+      <div class="pf"><strong>Age / Gender</strong>${pat.age||'–'} / ${pat.gender||'–'}</div>
+      <div class="pf"><strong>Blood Pressure</strong>${pat.bp||'–'}</div>
+      <div class="pf"><strong>Heart Rate</strong>${pat.hr||'–'}</div>
+      <div class="pf"><strong>Weight / Height</strong>${pat.weight||'–'} kg / ${pat.height||'–'} cm</div>
+      <div class="pf"><strong>Attending Clinician</strong>${pat.doctor||'–'}</div>
+    </div>
+    ${pat.notes&&pat.notes!=='–'?`<div class="pf" style="margin-top:8px"><strong>Clinical Notes</strong>${pat.notes}</div>`:''}
+    <h2>Diagnosis Result</h2>
+    <div class="presult" style="background:${color}18;border:2px solid ${color}">
+      <div style="font-size:2.2em;font-weight:900;letter-spacing:5px;color:${color}">
+        ${(pred?.prediction||'–').toUpperCase()}</div>
+      <div style="font-size:1em;color:#444;margin-top:4px">
+        Confidence: ${pred?.confidence?(pred.confidence*100).toFixed(1)+'%':'–'}</div>
+      <div style="font-size:0.85em;color:#333;margin-top:6px">
+        ${pred?.message||MESSAGES[pred?.prediction]||''}</div>
+    </div>
+    ${pred?.rms_db!=null?`
+    <h2>Signal Metrics</h2>
+    <div class="pgrid">
+      <div class="pf"><strong>RMS Energy</strong>${pred.rms_db} dB</div>
+      <div class="pf"><strong>Spectral Centroid</strong>${Math.round(pred.spectral_centroid||0)} Hz</div>
+      <div class="pf"><strong>Sample Rate</strong>${pred.sample_rate||800} SPS</div>
+      <div class="pf"><strong>Duration</strong>${pred.duration_sec||5} seconds</div>
+    </div>`:''}
+    ${probHTML?`<h2>Class Probability Breakdown</h2>
+    <table><thead><tr><th>Class</th><th>Probability</th><th>Distribution</th></tr></thead>
+    <tbody>${probHTML}</tbody></table>`:''}
+    ${imgs.waveChart?`<h2>Charts</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+      <img src="${imgs.waveChart}"  style="width:100%;border-radius:5px;border:1px solid #ddd">
+      <img src="${imgs.probaChart}" style="width:100%;border-radius:5px;border:1px solid #ddd">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+      <img src="${imgs.trendChart}" style="width:100%;border-radius:5px;border:1px solid #ddd">
+      <img src="${imgs.donutChart}" style="width:100%;border-radius:5px;border:1px solid #ddd">
+    </div>`:''}
+    ${histHTML?`<h2>Session History (Last 15)</h2>
+    <table><thead>
+      <tr><th>#</th><th>Name</th><th>Age</th><th>Result</th>
+      <th>Conf.</th><th>BP</th><th>HR</th><th>Timestamp</th></tr>
+    </thead><tbody>${histHTML}</tbody></table>`:''}
+    <div style="margin-top:28px;padding-top:14px;border-top:1px solid #ddd;
+      font-size:0.7em;color:#aaa;text-align:center">
+      Generated by CardioScope v1.0 &nbsp;|&nbsp;
+      MAX9814 + ADS1115 @ 800 SPS &nbsp;|&nbsp;
+      ${new Date().toLocaleString()} &nbsp;|&nbsp;
+      ⚠ FOR RESEARCH / EDUCATIONAL USE ONLY
+    </div>`;
+
+  try {
+    const {jsPDF} = window.jspdf;
+    const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const c   = await html2canvas(tgt,{scale:1.8,useCORS:true,
+                  backgroundColor:'#ffffff',width:800,windowWidth:800});
+    const imgD = c.toDataURL('image/png');
+    const pW   = pdf.internal.pageSize.getWidth();
+    const pH   = pdf.internal.pageSize.getHeight();
+    const ratio = c.height/c.width;
+    let imgH = pW*ratio, off=0;
+    while(off<imgH){
+      pdf.addImage(imgD,'PNG',0,-off,pW,pW*ratio);
+      off+=pH; if(off<imgH) pdf.addPage();
+    }
+    const fname = `Report_${(pat.name||'Patient').replace(/\s+/g,'_')}_${
+      new Date().toISOString().slice(0,10)}.pdf`;
+    pdf.save(fname);
+    showToast('✓ PDF saved!');
+  } catch(e){
+    console.error(e);
+    showToast('✗ PDF failed','red');
+  } finally {
+    tgt.style.display='none';
+  }
+}
+
+// ============================================================
+//  UTILS
+// ============================================================
+function clearForm(){
+  ['f-name','f-age','f-gender','f-bp','f-hr','f-weight','f-height','f-doctor','f-notes']
+    .forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+}
+function clearHistory(){
+  if(!confirm('Clear all saved records?')) return;
+  savedRecords=[]; recCounter=0;
+  localStorage.removeItem('stetho_v2');
+  renderTable(); updateStats();
+  showToast('Records cleared');
+}
+function showToast(msg, type='green'){
+  const colors={green:'var(--green)',amber:'var(--amber)',red:'var(--red)',cyan:'var(--cyan)'};
+  const t=document.getElementById('toast');
+  t.style.borderLeftColor=colors[type]||colors.green;
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+renderTable();
+updateStats();
+</script>
+</body>
+</html>
