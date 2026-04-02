@@ -51,10 +51,10 @@ DEFAULT_SAMPLE_RATE = 800
 RECORD_SECONDS      = 5
 DEFAULT_SAMPLES     = DEFAULT_SAMPLE_RATE * RECORD_SECONDS
 
-CLASSES  = ['normal', 'murmur']
+CLASSES  = ['Normal', 'Murmur']
 MESSAGES = {
-    'normal' : 'Heart sounds appear NORMAL. No anomalies detected.',
-    'murmur' : 'Possible heart MURMUR detected. Consult a cardiologist.'
+    'Normal' : 'Heart sounds appear NORMAL. No anomalies detected.',
+    'Murmur' : 'Possible heart MURMUR detected. Consult a cardiologist.'
 }
 
 history     = deque(maxlen=50)
