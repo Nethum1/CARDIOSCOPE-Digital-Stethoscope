@@ -145,8 +145,8 @@ The complete data flow of the system:
 
 ```
 ┌─────────────────┐     I2S Digital Audio     ┌──────────────────────┐
-│  INMP441 Mic    │ ─────────────────────────> │   ESP32 DevKit       │
-│  (16kHz, 16bit) │                            │   (PlatformIO)       │
+│  MAX9814 Mic    │ ─────────────────────────> │   ESP32 DevKit       │
+│     (8 bit)     │                            │   (PlatformIO)       │
 └─────────────────┘                            └──────────┬───────────┘
                                                           │
                                               HTTP POST /predict
