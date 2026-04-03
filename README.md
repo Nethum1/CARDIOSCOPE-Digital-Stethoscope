@@ -144,8 +144,8 @@ In this project, the esp32 is used to transmit the data collected from the micro
 The complete data flow of the system:
 
 ```
-┌─────────────────┐     I2S Digital Audio     ┌──────────────────────┐
-│  MAX9814 Mic    │ ─────────────────────────> │   ESP32 DevKit       │
+┌─────────────────┐     I2S Digital Audio      ┌──────────────────────┐
+│  MAX9814 Mic    │ ─────────────────────────> │   ESP32 WROOM - 32   │
 │     (8 bit)     │                            │   (PlatformIO)       │
 └─────────────────┘                            └──────────┬───────────┘
                                                           │
