@@ -222,7 +222,7 @@ Heart and lung sounds carry important diagnostic information:
 - **Crackles (Rales):** Discontinuous sounds caused by fluid-filled or collapsed airways reopening
 - **Wheezes:** Continuous high-pitched sounds from narrowed airways (asthma, COPD)
 
-The INMP441 captures sounds in the 20Hz–16kHz range at 16kHz sample rate. Heart sounds (20–600Hz) and lung sounds (up to 2000Hz) both fall well within the captured band. The ESP32 DMA buffers 3 seconds of audio (48,000 samples) before transmitting.
+The MAX9814 captures sounds in the 20Hz–20kHz frequency response with automatic gain control (AGC). Heart sounds (20–600Hz) and lung sounds (up to 2000Hz) both fall well within the captured band. The ESP32 DMA buffers 3 seconds of audio (48,000 samples) before transmitting.
 
 <hr>
 
