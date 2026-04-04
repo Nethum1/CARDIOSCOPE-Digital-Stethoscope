@@ -96,7 +96,7 @@ We have used the following technologies and software for our project
 
 ## Objectives 
 The main goals have set out for this project are 
-- Make a microphone - amplification module that can detect frequencies from 50Hz to 20kHz 
+- Make a microphone - amplification module that can detect frequencies from 20Hz to 20kHz 
 - Transmit the sound clip to an associated laptop wirelessly 
 - Be able to detect the disease by using an associated Deep Learning model
 <hr>
