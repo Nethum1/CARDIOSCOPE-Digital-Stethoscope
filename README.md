@@ -49,7 +49,7 @@ The key advantages of this digital approach over a traditional mechanical stetho
 - Real-time audio capture using a high-quality **I2S digital microphone** (MAX9814)
 - Wireless transmission to a local PC over the **same Wi-Fi network**
 - **Machine Learning classification** — Normal, Murmur, Arrhythmia, Extra Sound
-- Live web dashboard with **real waveform**, **MFCC heatmap**, probability charts
+- Live web dashboard with **real waveform**, probability charts
 - **Patient record management** with PDF report export
 - Fully local — **no cloud required**, no internet dependency
 <hr>
