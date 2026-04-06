@@ -604,7 +604,7 @@ http://localhost:5000/test
 <hr>
 
 <p align="center">
-   ESP32 · Python · Flask · librosa · scikit-learn
+   ESP32 · Python · Flask · librosa 
 </p>
 <p align="center">
    Thank You !
