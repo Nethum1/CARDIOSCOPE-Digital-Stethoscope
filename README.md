@@ -150,7 +150,6 @@ The complete data flow of the system:
 └─────────────────┘                            └──────────┬───────────┘
                                                           │
                                               HTTP POST /predict
-                                              (raw int16 bytes)
                                               Same Wi-Fi Network
                                                           │
                                                           ▼
