@@ -48,7 +48,7 @@ This project builds a fully functional **Digital Stethoscope** system using an E
 The key advantages of this digital approach over a traditional mechanical stethoscope are:
 - Real-time audio capture using a high-quality **I2S digital microphone** (MAX9814)
 - Wireless transmission to a local PC over the **same Wi-Fi network**
-- **Machine Learning classification** — Normal, Murmur, Arrhythmia, Extra Sound
+- **Machine Learning classification** — Normal, Murmur (In first step)
 - Live web dashboard with **real waveform**, probability charts
 - **Patient record management** with PDF report export
 - Fully local — **no cloud required**, no internet dependency
