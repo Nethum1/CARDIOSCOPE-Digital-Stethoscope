@@ -107,7 +107,7 @@ The main goals have set out for this project are
   height="500"
   align="middle"
 
-<p>The microcontroller that we are using in our project is the ESP32 WROOM 32.
+<p>The microcontroller that we are using in our project is the ESP32 WROOM - 32.
 The ESP32 is a high-performance microcontroller board that is widely used in Internet of Things (IoT) applications.
 Espressif Systems manufactures it, and it is the successor to the ESP8266. The ESP32 is built around a dual-core 
 Tensilica LX6 processor that operates at up to 240 MHz, providing plenty of processing power for IoT applications.
