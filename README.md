@@ -324,36 +324,36 @@ Processing runs **after** recording and **before** HTTP transmission to the Flas
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    DSP Processing Pipeline                       │
-│                                                                  │
-│  Raw ADC buffer (4000 × int16)                                   │
-│         │                                                        │
-│         ▼                                                        │
+│                    DSP Processing Pipeline                      │
+│                                                                 │
+│  Raw ADC buffer (4000 × int16)                                  │
+│         │                                                       │
+│         ▼                                                       │
 │  ┌─────────────────┐                                            │
 │  │  1. High-Pass   │  @ 20 Hz  — removes DC + breathing rumble  │
 │  │  Butterworth 2  │                                            │
 │  └────────┬────────┘                                            │
-│           │                                                      │
-│           ▼                                                      │
+│           │                                                     │
+│           ▼                                                     │
 │  ┌─────────────────┐                                            │
 │  │  2. Notch       │  @ 50 Hz  — removes mains interference     │
 │  │  IIR  Q = 35    │                                            │
 │  └────────┬────────┘                                            │
-│           │                                                      │
-│           ▼                                                      │
+│           │                                                     │
+│           ▼                                                     │
 │  ┌─────────────────┐                                            │
 │  │  3. Low-Pass    │  @ 300 Hz — removes HF noise above cardiac │
 │  │  Butterworth 2  │             band                           │
 │  └────────┬────────┘                                            │
-│           │                                                      │
-│           ▼                                                      │
+│           │                                                     │
+│           ▼                                                     │
 │  ┌─────────────────┐                                            │
-│  │  4. Normalize   │  Peak → 80% of ±32767 full 16-bit range   │
+│  │  4. Normalize   │  Peak → 80% of ±32767 full 16-bit range    │
 │  │  Gain cap 20×   │                                            │
 │  └────────┬────────┘                                            │
-│           │                                                      │
-│           ▼                                                      │
-│  Clean buffer → HTTP POST → Flask ML server                      │
+│           │                                                     │
+│           ▼                                                     │
+│  Clean buffer → HTTP POST → Flask ML server                     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
