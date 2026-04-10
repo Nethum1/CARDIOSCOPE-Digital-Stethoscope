@@ -154,29 +154,29 @@ The complete data flow of the system:
                                                           │
                                                           ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    LOCAL PC — Flask Server (Python)                   │
-│                                                                       │
-│  Raw bytes → float32 audio → librosa feature extraction               │
-│       ↓                                                               │
+│                    LOCAL PC — Flask Server (Python)                  │
+│                                                                      │
+│  Raw bytes → float32 audio → librosa feature extraction              │
+│       ↓                                                              │
 │  • MFCC (40 coeff × 60 frames)   — for heatmap + model input         │
 │  • Waveform (200 downsampled pts) — for waveform chart               │
 │  • RMS dB, ZCR, Spectral Centroid — for signal metrics               │
-│       ↓                                                               │
-│  Random Forest Classifier → prediction + all class probabilities      │
-│       ↓                                                               │
-│  /latest endpoint stores full result                                  │
+│       ↓                                                              │
+│  Random Forest Classifier → prediction + all class probabilities     │
+│       ↓                                                              │
+│  /latest endpoint stores full result                                 │
 └──────────────────────────────┬───────────────────────────────────────┘
                                │
                    Dashboard polls /latest every 2s
                                │
                                ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    Web Dashboard (dashboard.html)                     │
-│                                                                       │
-│  ● Real waveform chart          ● MFCC heatmap (40×60)              │
-│  ● Class probability bars       ● Confidence trend line             │
-│  ● Session distribution donut   ● Signal metrics (RMS, SC, ZCR)    │
-│  ● Patient record form          ● PDF report export                 │
+│                    Web Dashboard (dashboard.html)                    │
+│                                                                      │
+│  ● Real waveform chart          ● MFCC heatmap (40×60)               │
+│  ● Class probability bars       ● Confidence trend line              │
+│  ● Session distribution donut   ● Signal metrics (RMS, SC, ZCR)      │
+│  ● Patient record form          ● PDF report export                  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
