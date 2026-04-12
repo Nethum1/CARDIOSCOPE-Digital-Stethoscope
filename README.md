@@ -1,4 +1,4 @@
-# 🩺CARDIOSCOPE-(Digital-Stethoscope)
+# 🩺CARDIOSCOPE-(Digital Stethoscope)
 
 <br>
 <details>
