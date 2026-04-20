@@ -51,7 +51,7 @@ The key advantages of this digital approach over a traditional mechanical stetho
 - **Machine Learning classification** —> Normal, Murmur (In my first step)
 - Live web dashboard with **real waveform**, probability charts
 - **Patient record management** with PDF report export
-- Fully local — **no cloud required**, no internet dependency
+- Fully local (**no cloud required**, no internet dependency)
 <hr>
 
 ## Technologies Used
