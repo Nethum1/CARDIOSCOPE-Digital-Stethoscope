@@ -192,7 +192,7 @@ The complete data flow of the system:
 | **Microphone** | MAX9814 I2S Digital Microphone (8-bit) |
 | **Stethoscope** | Acoustic stethoscope —> mic inserted into chest piece |
 | **Switch** | Power ON and OFF|
-| **Push Button** | Momentary button — manual recording trigger |
+| **Push Button** | Momentary button —> manual recording trigger |
 | **Power** | USB 5V or 3.7V Li-Po battery + TP4056 charger |
 | **Resistors** | 10KΩ × 1 |
 | **Dotboard** | soldering board |
