@@ -242,7 +242,9 @@ Raw audio cannot be fed directly into an ML model. The Flask server uses **libro
 
 The **MFCC matrix (40×60)** is also sent back to the dashboard for the real-time heatmap visualization.
 
-**Why MFCC?** MFCCs mimic how the human auditory system perceives sound — lower coefficients capture broad spectral shape (useful for murmur detection) while higher coefficients capture fine timbral texture (useful for distinguishing arrhythmia patterns).
+**Why MFCC?** 
+
+MFCCs mimic how the human auditory system perceives sound — lower coefficients capture broad spectral shape (useful for murmur detection) while higher coefficients capture fine timbral texture (useful for distinguishing arrhythmia patterns).
 
 ### Random Forest Classifier
 
