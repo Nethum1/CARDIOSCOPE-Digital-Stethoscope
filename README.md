@@ -43,7 +43,7 @@
 </details>
 
 ## Introduction
-This project builds a fully functional **Digital Stethoscope** system using an ESP32 microcontroller and MAX9814 I2S digital microphone. The system captures heart and lung sounds, streams the raw audio wirelessly over Wi-Fi to a local PC, runs a Machine Learning model to classify the sounds, and delivers **real-time diagnostic predictions** through a live web dashboard — all without any cloud dependency.
+This project builds a fully functional **Digital Stethoscope** system using an ESP32 microcontroller and MAX9814 I2S digital microphone. The system captures heart and lung sounds, streams the raw audio wirelessly over Wi-Fi to a local PC, runs a Machine Learning model to classify the sounds, and delivers **real-time diagnostic predictions** through a live web dashboard,all without any cloud dependency.
 
 The key advantages of this digital approach over a traditional mechanical stethoscope are:
 - Real-time audio capture using a high-quality **I2S digital microphone** (MAX9814)
