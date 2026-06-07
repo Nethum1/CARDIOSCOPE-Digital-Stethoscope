@@ -1,5 +1,8 @@
 # 🩺 CARDIOSCOPE-(Digital Stethoscope)
 
+<img width="1182" height="848" alt="cardio" src="https://github.com/user-attachments/assets/b1411e4c-4dfd-499c-b4c5-ea50e728feed" />
+
+
 <br>
 <details>
   <summary>Table of Contents</summary>
